@@ -3,19 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { fetchProperty, Property } from '@/lib/api';
+import { fetchProperty, getImageUrl, Property } from '@/lib/api';
+import { formatPrice } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Pencil, MapPin, Bed, Bath, Ruler, Calendar, DollarSign } from 'lucide-react';
-import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Bath, Bed, Calendar, Check, ExternalLink, Mail, MapPin, Pencil, Phone, Ruler } from 'lucide-react';
+import { toast } from 'sonner';
+import PageHeader from '@/components/admin/PageHeader';
+import StatusBadge from '@/components/StatusBadge';
 
 const PropertyMap = dynamic(() => import('@/components/PropertyMap'), {
   ssr: false,
-  loading: () => <Skeleton className="h-full w-full" />,
+  loading: () => <Skeleton className="h-full w-full rounded-2xl" />,
 });
 
 export default function AdminPropertyDetailPage() {
@@ -53,236 +54,168 @@ export default function AdminPropertyDetailPage() {
 
   if (error || !property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-2xl font-bold text-destructive mb-4">Error</h2>
-            <p className="text-muted-foreground mb-6">{error || 'Property not found'}</p>
-            <Button onClick={() => router.back()}>Go Back</Button>
-          </CardContent>
-        </Card>
+      <div className="rounded-2xl border bg-card py-16 text-center">
+        <h2 className="text-2xl font-bold">Couldn&apos;t load property</h2>
+        <p className="mt-2 mb-6 text-muted-foreground">{error || 'Property not found'}</p>
+        <Button variant="outline" onClick={() => router.back()}>
+          <ArrowLeft /> Go back
+        </Button>
       </div>
     );
   }
 
-  const mainImage = property.images?.[0] || property.image || '/placeholder-property.jpg';
+  const mainImage = property.images?.[0] || property.image;
   const hasCoords = property.coordinates?.lat && property.coordinates?.lng;
 
+  const specs = [
+    property.bedrooms !== undefined && { icon: Bed, value: property.bedrooms, label: 'Bedrooms' },
+    property.bathrooms !== undefined && { icon: Bath, value: property.bathrooms, label: 'Bathrooms' },
+    !!property.landArea && { icon: Ruler, value: `${property.landArea} m²`, label: 'Land area' },
+    !!property.yearBuilt && { icon: Calendar, value: property.yearBuilt, label: 'Year built' },
+  ].filter(Boolean) as { icon: typeof Bed; value: string | number; label: string }[];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header Bar */}
-      <div className="border-b bg-card sticky top-0 z-30">
-        <div className="max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-5 w-5" />
+    <div>
+      <Button variant="ghost" size="sm" className="mb-4 -ml-3 text-muted-foreground" onClick={() => router.back()}>
+        <ArrowLeft /> Back
+      </Button>
+
+      <PageHeader
+        title={property.title}
+        description={
+          <span className="flex items-center gap-1.5">
+            <MapPin className="size-4" />
+            {property.address || property.location}, {property.province || 'Solomon Islands'}
+          </span>
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => window.open(`/properties/${id}`, '_blank')}>
+              <ExternalLink /> View live
             </Button>
-            <h1 className="text-xl md:text-2xl font-bold truncate max-w-[60vw]">
-              {property.title}
-            </h1>
-          </div>
-          <Button onClick={() => router.push(`/admin/properties/${id}/edit`)}>
-            <Pencil className="mr-2 h-4 w-4" /> Edit Property
-          </Button>
-        </div>
-      </div>
+            <Button onClick={() => router.push(`/admin/properties/${id}/edit`)}>
+              <Pencil /> Edit
+            </Button>
+          </>
+        }
+      />
 
-      {/* Main Content */}
-      <div className="max-w-350 mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Left – Details */}
-          <div className="lg:col-span-2 space-y-10">
-            {/* Quick Stats */}
-            <div className="flex flex-wrap gap-6 pb-6 border-b">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">${property.price.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Price</p>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
+          <div className="aspect-video overflow-hidden rounded-2xl bg-muted">
+            <img src={getImageUrl(mainImage)} alt={property.title} className="size-full object-cover" />
+          </div>
+
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="location">Location</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-8">
+              {specs.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {specs.map(({ icon: Icon, value, label }) => (
+                    <div key={label} className="rounded-2xl border bg-card p-4">
+                      <Icon className="mb-2 size-5 text-primary" />
+                      <p className="font-display text-2xl font-bold">{value}</p>
+                      <p className="text-sm text-muted-foreground">{label}</p>
+                    </div>
+                  ))}
                 </div>
+              )}
+              <div>
+                <h2 className="mb-3 text-xl font-bold">Description</h2>
+                <p className="leading-relaxed whitespace-pre-wrap text-foreground/75">
+                  {property.description || 'No description provided.'}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-lg px-4 py-1 capitalize">
-                  {property.status.replace('-', ' ')}
-                </Badge>
-              </div>
+            </TabsContent>
+
+            <TabsContent value="features">
+              {property.features?.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {property.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium">
+                      <Check className="size-4 text-primary" strokeWidth={3} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground">No features listed for this property.</p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="location" className="space-y-4">
+              {hasCoords && (
+                <p className="font-mono text-sm text-muted-foreground">
+                  {property.coordinates?.lat.toFixed(6)}, {property.coordinates?.lng.toFixed(6)}
+                </p>
+              )}
+              {hasCoords && property.coordinates ? (
+                <div className="h-96 overflow-hidden rounded-2xl border">
+                  <PropertyMap coordinates={property.coordinates} title={property.title} />
+                </div>
+              ) : (
+                <div className="grid h-64 place-items-center rounded-2xl border border-dashed bg-card text-muted-foreground">
+                  No coordinates set for this property
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-8 lg:h-fit">
+          <div className="overflow-hidden rounded-2xl border bg-card">
+            <div className="bg-ink p-5 text-ink-foreground">
+              <p className="text-sm text-ink-foreground/60">Price</p>
+              <p className="font-display text-3xl font-extrabold">{formatPrice(property.price)}</p>
             </div>
-
-            {/* Tabs */}
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="mb-8">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="features">Features</TabsTrigger>
-                <TabsTrigger value="location">Location</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-8">
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">Description</h2>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {property.description || 'No description provided.'}
-                  </p>
-                </div>
-
-                {/* Key Specs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  {property.bedrooms !== undefined && (
-                    <div className="flex items-center gap-3">
-                      <Bed className="h-6 w-6 text-primary" />
-                      <div>
-                        <p className="font-semibold text-lg">{property.bedrooms}</p>
-                        <p className="text-sm text-muted-foreground">Bedrooms</p>
-                      </div>
-                    </div>
-                  )}
-                  {property.bathrooms !== undefined && (
-                    <div className="flex items-center gap-3">
-                      <Bath className="h-6 w-6 text-primary" />
-                      <div>
-                        <p className="font-semibold text-lg">{property.bathrooms}</p>
-                        <p className="text-sm text-muted-foreground">Bathrooms</p>
-                      </div>
-                    </div>
-                  )}
-                  {property.landArea && (
-                    <div className="flex items-center gap-3">
-                      <Ruler className="h-6 w-6 text-primary" />
-                      <div>
-                        <p className="font-semibold text-lg">{property.landArea} sqm</p>
-                        <p className="text-sm text-muted-foreground">Land Area</p>
-                      </div>
-                    </div>
-                  )}
-                  {property.yearBuilt && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-6 w-6 text-primary" />
-                      <div>
-                        <p className="font-semibold text-lg">{property.yearBuilt}</p>
-                        <p className="text-sm text-muted-foreground">Year Built</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="features">
-                <h2 className="text-2xl font-semibold mb-6">Features & Amenities</h2>
-                {property.features?.length ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {property.features.map((feature, i) => (
-                      <div
-                        key={i}
-                        className="bg-muted/40 border rounded-lg p-4 flex items-center gap-3"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No features listed for this property.</p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="location">
-                <h2 className="text-2xl font-semibold mb-6">Property Location</h2>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-6 w-6 text-primary mt-1" />
-                    <div>
-                      <p className="font-medium">
-                        {property.address || property.location}, {property.province || 'Solomon Islands'}
-                      </p>
-                      {hasCoords && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Coordinates: {property.coordinates?.lat.toFixed(6)}, {property.coordinates?.lng.toFixed(6)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {hasCoords && property.coordinates ? (
-                    <div className="h-96 rounded-xl overflow-hidden border shadow-sm">
-                      <PropertyMap
-                        coordinates={property.coordinates}
-                        title={property.title}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-64 bg-muted rounded-xl flex items-center justify-center">
-                      <p className="text-muted-foreground">No coordinates available for map display</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="flex flex-wrap gap-2 p-5">
+              <StatusBadge status={property.status} />
+              <Badge variant="muted" className="capitalize">{property.type}</Badge>
+              {property.featured && <Badge variant="soft">Featured</Badge>}
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <aside className="lg:sticky lg:top-8 lg:h-fit space-y-8">
-            <Card className="border-primary/20 shadow-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-3xl font-bold text-primary">
-                    ${property.price.toLocaleString()}
-                  </span>
-                  <Badge variant="outline" className="text-lg px-4 py-1">
-                    {property.status.replace('-', ' ')}
-                  </Badge>
-                </div>
-
-                {property.agent && property.agent.name ? (
-                  <div className="space-y-5 pt-6 border-t">
-                    <h3 className="font-semibold text-lg">Listing Agent</h3>
-                    <div className="space-y-3">
-                      <p className="font-medium text-base">{property.agent.name}</p>
-                      <div className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{property.agent.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm break-all">{property.agent.email}</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-6">
-                      <Button variant="outline" className="w-full">
-                        Call Agent
-                      </Button>
-                      <Button className="w-full">
-                        Send Message
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    No agent information available
-                  </p>
+          <div className="rounded-2xl border bg-card p-5">
+            <h3 className="mb-4 text-lg font-bold">Listing agent</h3>
+            {property.agent && property.agent.name ? (
+              <div className="space-y-2.5 text-sm">
+                <p className="text-base font-semibold">{property.agent.name}</p>
+                {property.agent.phone && (
+                  <a href={`tel:${property.agent.phone}`} className="flex items-center gap-2.5 text-muted-foreground hover:text-foreground">
+                    <Phone className="size-4" /> {property.agent.phone}
+                  </a>
                 )}
-              </CardContent>
-            </Card>
-          </aside>
-        </div>
+                {property.agent.email && (
+                  <a href={`mailto:${property.agent.email}`} className="flex items-center gap-2.5 break-all text-muted-foreground hover:text-foreground">
+                    <Mail className="size-4" /> {property.agent.email}
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No agent information available</p>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );
 }
 
-// Loading Skeleton (unchanged but kept for completeness)
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="h-[60vh] bg-muted animate-pulse" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-10">
-            <Skeleton className="h-12 w-3/4" />
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-80 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-          <Skeleton className="h-96 w-full rounded-xl" />
+    <div className="space-y-8">
+      <Skeleton className="h-10 w-2/3" />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Skeleton className="aspect-video w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
         </div>
+        <Skeleton className="h-72 w-full rounded-2xl" />
       </div>
     </div>
   );

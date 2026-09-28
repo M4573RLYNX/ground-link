@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export interface HeroSlideData {
   _id: string;
@@ -16,69 +16,55 @@ interface HeroSliderProps {
   slides: HeroSlideData[];
 }
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop";
+
+/** Full-bleed background slider. Scrim keeps overlaid type readable on any photo. */
 export default function HeroSlider({ slides }: HeroSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-advance slides every 6 seconds
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
-
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % slides.length);
     }, 6000);
-
     return () => clearInterval(timer);
   }, [slides]);
 
-  if (!slides || slides.length === 0) {
-    // Fallback if no slides exist in DB
-    return (
-      <div className="absolute inset-0 z-0 bg-slate-900 border-none">
-        <img
-          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
-          alt="Real Estate Portfolio background"
-          className="w-full h-full object-cover grayscale opacity-90 mix-blend-multiply"
-        />
-        <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/50 to-background" />
-      </div>
-    );
-  }
+  const images = slides?.length
+    ? slides.map((s) => ({ id: s._id, src: s.imageUrl, alt: s.title || "Property in the Solomon Islands" }))
+    : [{ id: "fallback", src: FALLBACK_IMAGE, alt: "Solomon Islands coastline" }];
 
   return (
-    <div className="absolute inset-0 z-0 bg-slate-950 overflow-hidden">
-      {slides.map((slide, index) => (
-        <div
-          key={slide._id}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
-            }`}
-        >
-          {/* Zoom effect on the active image */}
-          <div className="w-full h-full overflow-hidden">
-            <img
-              src={slide.imageUrl}
-              alt={slide.title || "Hero background"}
-              className={`w-full h-full object-cover grayscale mix-blend-multiply transition-transform duration-[10000ms] ease-linear ${index === currentIndex ? 'scale-110' : 'scale-100'
-                }`}
-            />
-          </div>
-
-          {/* Overlay Gradient */}
-          <div className="absolute inset-0 bg-linear-to-b from-black/90 via-black/40 to-background/90 z-20" />
-
-
-
-        </div>
+    <div className="absolute inset-0 z-0 overflow-hidden bg-ink">
+      {images.map((img, index) => (
+        <img
+          key={img.id}
+          src={img.src}
+          alt={img.alt}
+          className={cn(
+            "absolute inset-0 size-full object-cover transition-[opacity,transform] ease-out",
+            index === currentIndex
+              ? "scale-105 opacity-100 duration-[1000ms,8000ms]"
+              : "scale-100 opacity-0 duration-1000"
+          )}
+        />
       ))}
 
-      {/* Slide Indicators */}
-      {slides.length > 1 && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40 flex gap-3">
-          {slides.map((_, index) => (
+      {/* Scrim: darker at top for the nav, heavy at bottom-left for the headline */}
+      <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/35 to-black/50" />
+      <div className="absolute inset-0 bg-linear-to-r from-black/50 to-transparent" />
+
+      {images.length > 1 && (
+        <div className="absolute right-5 bottom-8 z-20 flex gap-2 md:right-8">
+          {images.map((img, index) => (
             <button
-              key={index}
+              key={img.id}
               onClick={() => setCurrentIndex(index)}
-              className={`h-1.5 rounded-full transition-all duration-500 ${index === currentIndex ? "w-8 bg-white" : "w-3 bg-white/40 hover:bg-white/60"
-                }`}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-500",
+                index === currentIndex ? "w-8 bg-primary" : "w-3 bg-white/50 hover:bg-white/80"
+              )}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

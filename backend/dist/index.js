@@ -170,7 +170,10 @@ app.delete('/api/properties/:id', authenticate, authorizeAdmin, async (req, res)
         res.status(500).json({ error: err.message });
     }
 });
-app.listen(PORT, () => {
-    console.log(`Ground Link API running on port ${PORT}`);
-});
+export default app;
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Ground Link API running on port ${PORT}`);
+    });
+}
 //# sourceMappingURL=index.js.map

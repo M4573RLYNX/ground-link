@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 const PropertyMap = dynamic(() => import('./PropertyMap'), { 
   ssr: false,
   loading: () => (
-    <div className="h-100 w-full bg-muted animate-pulse rounded-2xl flex items-center justify-center text-muted-foreground">
+    <div className="h-full w-full bg-muted animate-pulse rounded-2xl flex items-center justify-center text-muted-foreground">
       Loading Map...
     </div>
   ) 
@@ -19,7 +19,7 @@ interface MapWrapperProps {
 
 export default function MapWrapper({ coordinates, title }: MapWrapperProps) {
   return (
-    <div className="h-100 w-full">
+    <div className="h-full w-full">
       <PropertyMap coordinates={coordinates} title={title} />
     </div>
   );

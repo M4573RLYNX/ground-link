@@ -1,8 +1,8 @@
-// app/(admin)/layout.tsx
-
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import AdminSidebar from '@/components/admin/AdminSidebar'; // your sidebar component
-import { Toaster } from '@/components/ui/sonner';
+import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export default function AdminLayout({
   children,
@@ -10,29 +10,23 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
+    <SidebarProvider>
+      <AdminSidebar />
 
-        <SidebarProvider>
-          <div className="flex h-screen w-full overflow-hidden">
-            {/* Fixed sidebar */}
-            <AdminSidebar />
+      <SidebarInset className="h-svh overflow-hidden bg-background">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/85 px-4 backdrop-blur-xl lg:px-8">
+          <SidebarTrigger className="-ml-1" />
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+            <Link href="/" target="_blank">
+              View site <ExternalLink />
+            </Link>
+          </Button>
+        </header>
 
-            {/* Main content – full remaining width */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Sticky header */}
-              <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-30">
-                <div className="flex h-14 lg:h-16 items-center px-4 lg:px-8">
-                  <SidebarTrigger />
-                  <div className="ml-4 font-semibold text-lg">Ground Link Admin</div>
-                </div>
-              </header>
-
-              {/* Full-width page content */}
-              <main className="flex-1 overflow-auto w-full p-4 lg:p-8">
-                {children}
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-
+        <div className="flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 lg:px-8 lg:py-10">{children}</div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

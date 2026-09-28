@@ -13,15 +13,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Property } from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { Property, getImageUrl } from '@/lib/api';
+import { formatPrice } from '@/lib/format';
+import PageHeader from '@/components/admin/PageHeader';
+import StatusBadge from '@/components/StatusBadge';
 
 export default function AdminPropertiesPage() {
   const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const fetchProperties = async () => {
     try {
@@ -73,124 +78,124 @@ export default function AdminPropertiesPage() {
     router.push(`/properties/${id}`);
   };
 
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? properties.filter((p) =>
+        [p.title, p.location, p.type, p.province].some((v) => v?.toLowerCase().includes(q))
+      )
+    : properties;
+
   return (
-    <div className="w-full min-h-screen bg-background">
-      {/* Full-width header section */}
-      <div className="w-full border-b bg-card sticky top-0 z-10">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl sm:text-3xl font-bold">All Properties</h1>
+    <div>
+      <PageHeader
+        title="Properties"
+        description={loading ? 'Loading…' : `${properties.length} listings in total`}
+        actions={
           <Button onClick={() => router.push('/admin/properties/new')}>
-            Add New Property
+            <Plus /> Add property
+          </Button>
+        }
+      />
+
+      {error ? (
+        <div className="rounded-2xl border bg-card py-16 text-center">
+          <h2 className="text-2xl font-bold">Couldn&apos;t load properties</h2>
+          <p className="mt-2 mb-6 text-muted-foreground">{error}</p>
+          <Button onClick={fetchProperties}>Try again</Button>
+        </div>
+      ) : loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : properties.length === 0 ? (
+        <div className="rounded-2xl border border-dashed bg-card py-20 text-center">
+          <p className="font-display text-2xl font-bold">No properties yet</p>
+          <Button className="mt-6" onClick={() => router.push('/admin/properties/new')}>
+            <Plus /> Add your first property
           </Button>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-2xl border bg-card">
+          <div className="p-4">
+            <div className="relative max-w-sm">
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search title, location, type…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-10 pl-10"
+              />
+            </div>
+          </div>
 
-      {/* Main content – full width table */}
-      <div className="w-full overflow-x-auto">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {error ? (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-destructive mb-4">Error</h2>
-              <p className="text-muted-foreground mb-6">{error}</p>
-              <Button onClick={fetchProperties}>Try Again</Button>
-            </div>
-          ) : loading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex gap-4">
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ))}
-            </div>
-          ) : properties.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <p className="text-xl">No properties found yet.</p>
-              <Button 
-                variant="outline" 
-                className="mt-6"
-                onClick={() => router.push('/admin/properties/new')}
-              >
-                Add Your First Property
-              </Button>
-            </div>
-          ) : (
-            <Table className="w-full border-collapse">
-              <TableHeader className="bg-muted/50 sticky top-0">
-                <TableRow>
-                  <TableHead className="w-[30%]">Title</TableHead>
-                  <TableHead className="w-[12%]">Type</TableHead>
-                  <TableHead className="w-[14%]">Price (SBD)</TableHead>
-                  <TableHead className="w-[12%]">Status</TableHead>
-                  <TableHead className="w-[15%]">Location</TableHead>
-                  <TableHead className="w-[17%] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+          <Table>
+            <TableHeader className="border-t bg-muted/50">
+              <TableRow>
+                <TableHead>Property</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
-              <TableBody>
-                {properties.map((property) => (
-                  <TableRow 
-                    key={property._id} 
-                    className="hover:bg-muted/50 transition-colors border-b last:border-0"
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span>{property.title}</span>
+            <TableBody>
+              {visible.map((property) => (
+                <TableRow key={property._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={getImageUrl(property.image || property.images?.[0])}
+                        alt=""
+                        className="size-11 shrink-0 rounded-lg bg-muted object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="max-w-72 truncate font-semibold">{property.title}</p>
                         {property.featured && (
-                          <Badge variant="default" className="mt-1 w-fit text-xs">Featured</Badge>
+                          <Badge variant="soft" className="mt-0.5">Featured</Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="capitalize">{property.type}</TableCell>
-                    <TableCell className="font-medium">
-                      ${property.price.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={
-                          property.status === 'for-sale' || property.status === 'for-rent'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        className="capitalize"
-                      >
-                        {property.status.replace('-', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{property.location}</TableCell>
-                    <TableCell className="text-right space-x-1 sm:space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleView(property._id)}
-                        title="View on public site"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(property._id)}
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                        onClick={() => handleDelete(property._id)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="capitalize text-muted-foreground">{property.type}</TableCell>
+                  <TableCell className="font-medium">{formatPrice(property.price)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={property.status} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{property.location}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon-sm" onClick={() => handleView(property._id)} title="View on public site">
+                      <Eye />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => handleEdit(property._id)} title="Edit">
+                      <Pencil />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => handleDelete(property._id)}
+                      title="Delete"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {visible.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                    No properties match &ldquo;{query}&rdquo;
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      )}
     </div>
   );
 }

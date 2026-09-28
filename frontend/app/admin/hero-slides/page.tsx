@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchHeroSlides, createHeroSlide, deleteHeroSlide, updateHeroSlide } from "@/lib/api";
 import { HeroSlideData } from "@/components/HeroSlider";
-import { Trash2, Plus, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import PageHeader from "@/components/admin/PageHeader";
 
 export default function HeroSlidesAdmin() {
   const [slides, setSlides] = useState<HeroSlideData[]>([]);
@@ -35,7 +38,7 @@ export default function HeroSlidesAdmin() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return alert("Please select an image file first.");
+    if (!file) return toast.error("Please select an image file first.");
 
     try {
       setIsUploading(true);
@@ -52,11 +55,11 @@ export default function HeroSlidesAdmin() {
       setTitle("");
       setSubtitle("");
       
-      // Reload slides
+      toast.success("Slide uploaded");
       await loadSlides();
     } catch (error) {
       console.error(error);
-      alert("Failed to upload slide.");
+      toast.error("Failed to upload slide.");
     } finally {
       setIsUploading(false);
     }
@@ -69,7 +72,7 @@ export default function HeroSlidesAdmin() {
       setSlides(slides.filter((s) => s._id !== id));
     } catch (error) {
       console.error(error);
-      alert("Failed to delete slide.");
+      toast.error("Failed to delete slide.");
     }
   };
 
@@ -81,123 +84,97 @@ export default function HeroSlidesAdmin() {
       setSlides(slides.map(s => s._id === slide._id ? updated : s));
     } catch (error) {
       console.error(error);
-      alert("Failed to toggle visibility.");
+      toast.error("Failed to toggle visibility.");
     }
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto min-h-screen">
-      <div className="flex justify-between items-center mb-10">
+    <div>
+      <PageHeader title="Hero slides" description="The rotating background images on the homepage." />
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Upload */}
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Manage Hero Slides</h1>
-          <p className="text-slate-500 mt-2">Upload and arrange the hero images shown on the public landing page.</p>
-        </div>
-      </div>
+          <form onSubmit={handleCreate} className="space-y-5 rounded-2xl border bg-card p-5 lg:sticky lg:top-8">
+            <h2 className="text-lg font-bold">Add a slide</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Left Column: Upload Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-3xl shadow-xs border border-slate-100 sticky top-8">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary" /> Add New Slide
-            </h2>
-            
-            <form onSubmit={handleCreate} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Image File *</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer relative">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    required 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  />
-                  {file ? (
-                    <div className="text-sm font-medium text-slate-700 truncate">{file.name}</div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <ImageIcon className="w-8 h-8" />
-                      <span className="text-sm font-medium">Click or drag image to upload</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <label className="relative flex aspect-video cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed text-center transition-colors hover:border-primary hover:bg-primary/5">
+              <input
+                type="file"
+                accept="image/*"
+                required
+                className="absolute inset-0 cursor-pointer opacity-0"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              {file ? (
+                <span className="px-4 text-sm font-medium break-all">{file.name}</span>
+              ) : (
+                <>
+                  <ImagePlus className="size-7 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Click or drop an image</span>
+                </>
+              )}
+            </label>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Headline Tag (Optional)</label>
-                <Input 
-                  placeholder="e.g. Welcome to Solomon Islands" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  className="rounded-xl h-12 bg-slate-50 border-none"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="slide-title">Headline tag</Label>
+              <Input id="slide-title" placeholder="e.g. Welcome to Solomon Islands" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Main Text (Optional)</label>
-                <Input 
-                  placeholder="e.g. Find your perfect place." 
-                  value={subtitle} 
-                  onChange={(e) => setSubtitle(e.target.value)} 
-                  className="rounded-xl h-12 bg-slate-50 border-none"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="slide-subtitle">Main text</Label>
+              <Input id="slide-subtitle" placeholder="e.g. Find your perfect place." value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+            </div>
 
-              <Button 
-                type="submit" 
-                disabled={isUploading || !file} 
-                className="w-full h-14 rounded-xl font-bold text-lg"
-              >
-                {isUploading ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Uploading...</>
-                ) : (
-                  "Upload Slide"
-                )}
-              </Button>
-            </form>
-          </div>
+            <Button type="submit" disabled={isUploading || !file} size="lg" className="w-full">
+              {isUploading ? <><Loader2 className="animate-spin" /> Uploading…</> : "Upload slide"}
+            </Button>
+          </form>
         </div>
 
-        {/* Right Column: Existing Slides */}
+        {/* Existing slides */}
         <div className="lg:col-span-2">
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-slate-400 gap-3">
-              <Loader2 className="w-6 h-6 animate-spin" /> Fetching slides...
+            <div className="flex h-64 items-center justify-center gap-3 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" /> Loading slides…
             </div>
           ) : slides.length === 0 ? (
-            <div className="border border-dashed border-slate-200 rounded-3xl p-16 text-center bg-slate-50">
-              <h3 className="text-xl font-bold text-slate-900 mb-2">No active slides</h3>
-              <p className="text-slate-500">Your homepage is currently using the static fallback image.</p>
+            <div className="rounded-2xl border border-dashed bg-card p-16 text-center">
+              <h3 className="text-xl font-bold">No slides yet</h3>
+              <p className="mt-1 text-muted-foreground">The homepage is using the default fallback image.</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               {slides.map((slide) => (
-                <div key={slide._id} className="bg-white rounded-3xl p-4 shadow-xs border border-slate-100 flex flex-col sm:flex-row gap-6 items-center">
-                  <div className="w-full sm:w-48 h-32 rounded-2xl overflow-hidden shrink-0 bg-slate-100">
-                    <img src={slide.imageUrl} alt={slide.title || "Slide image"} className="w-full h-full object-cover" />
+                <div key={slide._id} className="overflow-hidden rounded-2xl border bg-card">
+                  <div className="relative aspect-video bg-muted">
+                    <img
+                      src={slide.imageUrl}
+                      alt={slide.title || "Slide image"}
+                      className={`size-full object-cover transition-opacity ${slide.isActive ? "" : "opacity-40 grayscale"}`}
+                    />
+                    <span className={`absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-semibold ${slide.isActive ? "bg-success text-white" : "bg-ink text-ink-foreground"}`}>
+                      {slide.isActive ? "Live" : "Hidden"}
+                    </span>
                   </div>
-                  
-                  <div className="flex-1 w-full space-y-2">
-                    {slide.title && <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-md">{slide.title}</span>}
-                    <h3 className="text-xl font-black text-slate-900">{slide.subtitle || "No Subtitle"}</h3>
-                    <p className="text-sm font-medium text-slate-500 break-all">URL: {slide.imageUrl.split('/').pop()}</p>
+
+                  <div className="space-y-1 p-4">
+                    {slide.title && <p className="eyebrow">{slide.title}</p>}
+                    <p className="truncate font-semibold">{slide.subtitle || <span className="text-muted-foreground">No main text</span>}</p>
                   </div>
-                  
-                  <div className="flex sm:flex-col gap-3 shrink-0">
-                    <Button 
-                      variant={slide.isActive ? "default" : "outline"} 
-                      onClick={() => handleToggleActive(slide)}
-                      className="rounded-xl w-32"
-                    >
-                      {slide.isActive ? "Visible" : "Hidden"}
+
+                  <div className="flex gap-2 border-t p-3">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleToggleActive(slide)}>
+                      {slide.isActive ? <><EyeOff /> Hide</> : <><Eye /> Show</>}
                     </Button>
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => handleDelete(slide._id)}
-                      className="rounded-xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 w-32"
+                      title="Delete slide"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      <Trash2 />
                     </Button>
                   </div>
                 </div>

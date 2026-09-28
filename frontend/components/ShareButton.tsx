@@ -1,14 +1,16 @@
 "use client";
 
 import { Share2 } from 'lucide-react';
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner"; // Optional: if you use Sonner for notifications
+import { cn } from "@/lib/utils";
 
 interface ShareButtonProps {
   title: string;
+  className?: string;
 }
 
-export default function ShareButton({ title }: ShareButtonProps) {
+export default function ShareButton({ title, className }: ShareButtonProps) {
   const handleShare = async () => {
     const shareData = {
       title: title,
@@ -17,14 +19,12 @@ export default function ShareButton({ title }: ShareButtonProps) {
     };
 
     try {
-      // Check if the browser supports native sharing (Mobile/Safari)
+      // Native share sheet on mobile/Safari, clipboard everywhere else
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        // Fallback for Desktop: Copy to clipboard
         await navigator.clipboard.writeText(window.location.href);
-        alert("Link copied to clipboard!"); 
-        // Better: toast.success("Link copied to clipboard!")
+        toast.success("Link copied to clipboard");
       }
     } catch (err) {
       console.log('Error sharing:', err);
@@ -32,12 +32,8 @@ export default function ShareButton({ title }: ShareButtonProps) {
   };
 
   return (
-    <Button 
-      variant="ghost" 
-      onClick={handleShare}
-      className="text-slate-400 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest gap-2"
-    >
-      <Share2 className="h-4 w-4" /> Share with someone
+    <Button variant="outline" onClick={handleShare} className={cn(className)}>
+      <Share2 /> Share
     </Button>
   );
 }

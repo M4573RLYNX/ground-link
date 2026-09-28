@@ -20,7 +20,7 @@ export default function PropertyMap({ coordinates, title }: PropertyMapProps) {
       className: 'custom-div-icon',
       html: `
         <div style="
-          background-color: #0F172A; 
+          background-color: var(--primary); 
           width: 32px; 
           height: 32px; 
           border-radius: 50% 50% 50% 0; 
@@ -45,7 +45,7 @@ export default function PropertyMap({ coordinates, title }: PropertyMapProps) {
   }, []);
 
   return (
-    <div className="h-full w-full rounded-2xl overflow-hidden border-2 border-muted shadow-sm">
+    <div className="h-full w-full overflow-hidden rounded-2xl">
       <MapContainer
         center={[coordinates.lat, coordinates.lng]}
         zoom={15}
