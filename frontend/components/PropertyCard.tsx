@@ -1,9 +1,9 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Bed, Bath, Square, ChevronRight } from "lucide-react";
-import { Property, getImageUrl } from "@/lib/api";
 import Link from "next/link";
+import { ArrowUpRight, Bath, Bed, MapPin, Square } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/StatusBadge";
+import { Property, getImageUrl } from "@/lib/api";
+import { formatListingPrice } from "@/lib/format";
 
 interface PropertyCardProps {
   property: Property;
@@ -13,78 +13,56 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   const mainImage = property.image || property.images?.[0];
   const isLand = property.type.toLowerCase() === 'land';
 
+  const specs = [
+    !isLand && property.bedrooms !== undefined && { icon: Bed, label: `${property.bedrooms} bd` },
+    !isLand && property.bathrooms !== undefined && { icon: Bath, label: `${property.bathrooms} ba` },
+    property.landArea !== undefined && property.landArea > 0 && { icon: Square, label: `${property.landArea.toLocaleString()} m²` },
+  ].filter(Boolean) as { icon: typeof Bed; label: string }[];
+
   return (
-    <Link href={`/properties/${property._id}`} className="group block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-[2rem]">
-      <Card className="border-none shadow-none bg-transparent overflow-visible">
-        {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] shadow-sm mb-4 border border-black/5">
-          <img
-            src={getImageUrl(mainImage)}
-            alt={property.title}
-            className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
-          />
-          {/* Subtle gradient overlay for badges */}
-          <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-transparent opacity-80" />
-          
-          <div className="absolute top-4 left-4 flex gap-2">
-            {property.featured && (
-              <Badge className="bg-white text-black font-bold border-none shadow-sm px-3 py-1 text-xs tracking-wider">
-                FEATURED
-              </Badge>
-            )}
-            <Badge className="bg-primary/90 text-white font-bold border-none shadow-sm px-3 py-1 text-xs tracking-wider uppercase backdrop-blur-sm">
-              {property.status.replace('-', ' ')}
-            </Badge>
-          </div>
+    <Link
+      href={`/properties/${property._id}`}
+      className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+    >
+      <div className="relative aspect-4/3 overflow-hidden rounded-2xl bg-muted">
+        <img
+          src={getImageUrl(mainImage)}
+          alt={property.title}
+          className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+        />
 
-          <div className="absolute bottom-4 right-4">
-             <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 shadow-sm text-primary">
-                <ChevronRight className="h-5 w-5" />
-             </div>
+        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            <StatusBadge status={property.status} className="shadow-sm" />
+            {property.featured && <Badge variant="glass" className="shadow-sm">Featured</Badge>}
           </div>
+          <span className="grid size-9 translate-y-1 place-items-center rounded-full bg-white text-foreground opacity-0 shadow-sm transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <ArrowUpRight className="size-4" />
+          </span>
         </div>
+      </div>
 
-        {/* Content */}
-        <CardContent className="p-0 space-y-2">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold tracking-tight text-slate-900 line-clamp-1 group-hover:text-primary transition-colors">
-                {property.title}
-              </h3>
-              <p className="text-[15px] font-medium text-slate-500 truncate flex items-center gap-1 mt-0.5">
-                {property.location}{property.province ? `, ${property.province}` : ''}
-              </p>
-            </div>
-          </div>
+      <div className="px-1 pt-4">
+        <p className="font-display text-2xl font-bold tracking-tight">{formatListingPrice(property)}</p>
+        <h3 className="mt-1 line-clamp-1 font-sans text-base font-semibold tracking-normal transition-colors group-hover:text-primary">
+          {property.title}
+        </h3>
+        <p className="mt-1 flex items-center gap-1 truncate text-sm text-muted-foreground">
+          <MapPin className="size-3.5 shrink-0" />
+          {property.location}{property.province ? `, ${property.province}` : ''}
+        </p>
 
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              SBD {property.price.toLocaleString()}
-            </span>
+        {specs.length > 0 && (
+          <div className="mt-3 flex items-center gap-4 border-t pt-3 text-sm font-medium text-foreground/80">
+            {specs.map(({ icon: Icon, label }) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <Icon className="size-4 text-muted-foreground" />
+                {label}
+              </span>
+            ))}
           </div>
-
-          <div className="flex items-center gap-4 text-[15px] font-medium text-slate-600 mt-2">
-            {!isLand && property.bedrooms !== undefined && (
-              <div className="flex items-center">
-                <Bed className="h-4 w-4 mr-1.5 opacity-70" />
-                {property.bedrooms} Beds
-              </div>
-            )}
-            {!isLand && property.bathrooms !== undefined && (
-              <div className="flex items-center">
-                <Bath className="h-4 w-4 mr-1.5 opacity-70" />
-                {property.bathrooms} Baths
-              </div>
-            )}
-            {property.landArea !== undefined && property.landArea > 0 && (
-              <div className="flex items-center">
-                <Square className="h-4 w-4 mr-1.5 opacity-70" />
-                {property.landArea} m²
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </Link>
   );
 }

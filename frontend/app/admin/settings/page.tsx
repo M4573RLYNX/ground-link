@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import {  Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import PageHeader from '@/components/admin/PageHeader';
 
 // Mock user data - replace with real API fetch later
 interface User {
@@ -136,18 +137,18 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+    <div>
+      <PageHeader title="Settings" description="Your profile, password and team access." />
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-8">
+        <TabsList className="mb-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
           <TabsTrigger value="users">Manage Users</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
-          <Card>
+          <Card className="max-w-2xl">
             <CardHeader><CardTitle>Update Profile</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={handleProfileSubmit} className="space-y-6">
@@ -168,7 +169,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="password">
-          <Card>
+          <Card className="max-w-2xl">
             <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordSubmit} className="space-y-6">
@@ -199,7 +200,7 @@ export default function SettingsPage() {
                 <CardTitle>Manage Users</CardTitle>
                 <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                   <DialogTrigger asChild>
-                    <Button><Plus className="mr-2 h-4 w-4" /> Add User</Button>
+                    <Button size="sm"><Plus /> Add user</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>Add New User</DialogTitle></DialogHeader>
@@ -248,19 +249,19 @@ export default function SettingsPage() {
                 <TableBody>
                   {users.map(user => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="font-semibold">{user.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                        <Badge variant={user.role === 'admin' ? 'ink' : 'muted'} className="capitalize">
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell>{user.createdAt}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.createdAt}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => toast.info('Edit user coming soon')}>
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteUser(user.id)}>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteUser(user.id)}>
                           Delete
                         </Button>
                       </TableCell>

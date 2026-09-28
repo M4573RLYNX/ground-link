@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Eye, Pencil, TrendingUp } from 'lucide-react';
+import { ArrowRight, Eye, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Property } from '@/lib/api';
+import { Property, getImageUrl } from '@/lib/api';
+import { formatPrice } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import PageHeader from '@/components/admin/PageHeader';
+import StatusBadge from '@/components/StatusBadge';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -54,129 +56,96 @@ export default function AdminDashboard() {
     }
   };
 
+  const statCards = [
+    { label: 'Total listings', value: stats.total, className: 'bg-ink text-ink-foreground border-ink' },
+    { label: 'Featured', value: stats.featured, className: 'bg-primary text-primary-foreground border-primary' },
+    { label: 'For sale', value: stats.forSale, className: 'bg-card' },
+    { label: 'For rent', value: stats.forRent, className: 'bg-card' },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="max-w-350 mx-auto px-6 py-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground mt-2 text-lg">
-                Welcome back to Ground Link Admin
-              </p>
-            </div>
-            <Button onClick={() => router.push('/admin/properties/new')} size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Add New Property
-            </Button>
+    <div>
+      <PageHeader
+        title="Dashboard"
+        description="Welcome back. Here's what's live on Ground Link."
+        actions={
+          <Button onClick={() => router.push('/admin/properties/new')}>
+            <Plus /> Add property
+          </Button>
+        }
+      />
+
+      <div className="mb-10 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {statCards.map((card) => (
+          <div key={card.label} className={cn('rounded-2xl border p-5 md:p-6', card.className)}>
+            <p className="text-sm font-medium opacity-70">{card.label}</p>
+            {loading ? (
+              <Skeleton className="mt-3 h-12 w-16 bg-current/10" />
+            ) : (
+              <p className="mt-2 font-display text-5xl font-extrabold tracking-tight md:text-6xl">{card.value}</p>
+            )}
           </div>
-        </div>
+        ))}
       </div>
 
-      <div className="max-w-350 mx-auto px-6 py-10">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading ? <Skeleton className="h-10 w-20" /> : <div className="text-4xl font-bold">{stats.total}</div>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Featured</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? <Skeleton className="h-10 w-20" /> : <div className="text-4xl font-bold text-primary">{stats.featured}</div>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">For Sale</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? <Skeleton className="h-10 w-20" /> : <div className="text-4xl font-bold">{stats.forSale}</div>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">For Rent</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? <Skeleton className="h-10 w-20" /> : <div className="text-4xl font-bold">{stats.forRent}</div>}
-            </CardContent>
-          </Card>
+      <div className="rounded-2xl border bg-card">
+        <div className="flex items-center justify-between p-5 md:px-6">
+          <h2 className="text-xl font-bold">Recent properties</h2>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/admin/properties/all')}>
+            View all <ArrowRight />
+          </Button>
         </div>
 
-        {/* Recent Properties */}
-        <Card className="w-full">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Properties</CardTitle>
-            <Button variant="outline" onClick={() => router.push('/admin/properties')}>
-              View All
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : recentProperties.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">No properties yet</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentProperties.map((prop) => (
-                    <TableRow key={prop._id}>
-                      <TableCell className="font-medium">{prop.title}</TableCell>
-                      <TableCell className="capitalize">{prop.type}</TableCell>
-                      <TableCell>${prop.price.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize">
-                          {prop.status.replace('-', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/properties/${prop._id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/admin/properties/${prop._id}/edit`)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {loading ? (
+          <div className="space-y-3 px-5 pb-5 md:px-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        ) : recentProperties.length === 0 ? (
+          <p className="border-t py-12 text-center text-muted-foreground">No properties yet</p>
+        ) : (
+          <Table>
+            <TableHeader className="border-t bg-muted/50">
+              <TableRow>
+                <TableHead>Property</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentProperties.map((prop) => (
+                <TableRow key={prop._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={getImageUrl(prop.image || prop.images?.[0])}
+                        alt=""
+                        className="size-10 shrink-0 rounded-lg bg-muted object-cover"
+                      />
+                      <span className="max-w-64 truncate font-semibold">{prop.title}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="capitalize text-muted-foreground">{prop.type}</TableCell>
+                  <TableCell className="font-medium">{formatPrice(prop.price)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={prop.status} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon-sm" onClick={() => router.push(`/properties/${prop._id}`)} title="View on site">
+                      <Eye />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => router.push(`/admin/properties/${prop._id}/edit`)} title="Edit">
+                      <Pencil />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

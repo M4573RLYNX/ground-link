@@ -1,78 +1,70 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Building2, Settings, LogOut, MapPin, Image as ImageIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { usePathname } from 'next/navigation';
+import { Building2, Image as ImageIcon, LayoutGrid, LogOut, Plus, Settings } from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
 
 const menuItems = [
-  { title: "Dashboard", url: "/admin", icon: Home },
-  { title: "All Properties", url: "/admin/properties/all", icon: Building2 },
-  { title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: 'Dashboard', url: '/admin', icon: LayoutGrid, exact: true },
+  { title: 'Properties', url: '/admin/properties/all', icon: Building2 },
+  { title: 'Add property', url: '/admin/properties/new', icon: Plus },
+  { title: 'Hero slides', url: '/admin/hero-slides', icon: ImageIcon },
+  { title: 'Settings', url: '/admin/settings', icon: Settings },
 ];
+
+const itemClass =
+  'h-10 rounded-lg font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary-foreground [&>svg]:size-[18px]';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar 
-      collapsible="icon" 
-      className="border-r border-border/50 transition-all duration-300 ease-in-out"
-    >
-      <SidebarContent>
-        {/* Logo / Brand with hover animation */}
-        <div className="px-6 py-8 border-b border-border/50">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-9 h-9 bg-linear-to-br from-primary to-indigo-600 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            <div className="overflow-hidden">
-              <h1 className="font-bold text-2xl tracking-tighter transition-all duration-300 group-hover:text-primary">
-                Ground Link
-              </h1>
-              <p className="text-[10px] text-muted-foreground -mt-1 transition-all">ADMIN PANEL</p>
-            </div>
-          </div>
-        </div>
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarHeader className="px-3 pt-5 pb-4">
+        <Link href="/admin" className="flex items-center gap-2.5 overflow-hidden rounded-lg px-1">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+            <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 20h18" />
+              <path d="M5 20V10l7-5 7 5v10" />
+              <path d="M10 20v-5h4v5" />
+            </svg>
+          </span>
+          <span className="truncate font-display text-lg font-extrabold tracking-tight text-white group-data-[collapsible=icon]:hidden">
+            Ground Link
+          </span>
+        </Link>
+      </SidebarHeader>
 
-        <SidebarGroup className="mt-8">
-          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-muted-foreground px-6 mb-3">
-            MANAGEMENT
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/50">
+            Manage
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {menuItems.map((item) => {
-                const isActive = pathname === item.url || pathname.startsWith(item.url + '/');
-                
+                const isActive = item.exact
+                  ? pathname === item.url
+                  : pathname === item.url || pathname.startsWith(item.url + '/');
+
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      className={cn(
-                        "group relative h-11 transition-all duration-300 hover:bg-primary/10",
-                        isActive && "bg-primary/10 text-primary font-medium"
-                      )}
-                    >
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className={itemClass}>
                       <Link href={item.url}>
-                        <div className="flex items-center gap-3 relative z-10">
-                          <item.icon 
-                            className={cn(
-                              "h-5 w-5 transition-all duration-300",
-                              isActive && "scale-110"
-                            )} 
-                          />
-                          <span className="transition-all duration-300">{item.title}</span>
-                        </div>
-
-                        {/* Active indicator - sliding bar */}
-                        {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full transition-all duration-300" />
-                        )}
-
-                        {/* Hover glow effect */}
-                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
+                        <item.icon />
+                        <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -81,31 +73,25 @@ export default function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Logout - with danger styling and animation */}
-        <SidebarGroup className="mt-auto mb-6">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="text-red-600 hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-700 transition-all duration-300 group h-11"
-                  asChild
-                >
-                  <button 
-                    onClick={() => {
-                      localStorage.removeItem('adminToken');
-                      window.location.href = '/login';
-                    }}
-                  >
-                    <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
-                    <span>Logout</span>
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="pb-5">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Log out"
+              className={itemClass + ' hover:bg-primary/15 hover:text-primary'}
+              onClick={() => {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/login';
+              }}
+            >
+              <LogOut />
+              <span>Log out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

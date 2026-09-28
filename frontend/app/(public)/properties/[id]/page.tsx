@@ -1,17 +1,20 @@
-// src/app/(public)/properties/[id]/page.tsx
-
-import { fetchProperty, Property, getImageUrl } from '@/lib/api';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MapPin, Bed, Bath, Ruler, Mail, Phone, ChevronLeft, Share, Heart, CheckCircle2, Building, Calendar, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Bath, Bed, Building, Calendar, Check, ChevronLeft, Layers, Mail, MapPin, Phone, Ruler } from 'lucide-react';
+import { fetchProperty, getImageUrl } from '@/lib/api';
+import { formatPrice, isRental } from '@/lib/format';
+import { SITE_CONTACT } from '@/lib/site';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import StatusBadge from '@/components/StatusBadge';
+import SiteHeader from '@/components/site/SiteHeader';
+import SiteFooter from '@/components/site/SiteFooter';
 import MapWrapper from '@/components/MapWrapper';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ShareButton from '@/components/ShareButton';
+
+const OFFICE_PHONE = SITE_CONTACT.whatsapp;
+const OFFICE_EMAIL = SITE_CONTACT.email;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -65,266 +68,192 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const remainingImagesCount = images.length - 5;
 
   const isLand = property.type.toLowerCase() === 'land';
+  const place = `${property.address || property.location}, ${property.province || 'Solomon Islands'}`;
+  const rental = isRental(property.status);
+
+  const keyFacts = [
+    !isLand && property.bedrooms !== undefined && { icon: Bed, value: property.bedrooms, label: 'Bedrooms' },
+    !isLand && property.bathrooms !== undefined && { icon: Bath, value: property.bathrooms, label: 'Bathrooms' },
+    { icon: Ruler, value: property.landArea ? `${property.landArea.toLocaleString()} m²` : '—', label: 'Land area' },
+  ].filter(Boolean) as { icon: typeof Bed; value: string | number; label: string }[];
+
+  const details = [
+    property.buildingArea !== undefined && property.buildingArea > 0 && { icon: Layers, label: 'Building area', value: `${property.buildingArea} m²` },
+    property.yearBuilt !== undefined && property.yearBuilt > 0 && { icon: Calendar, label: 'Year built', value: property.yearBuilt },
+    { icon: Building, label: 'Property type', value: property.type },
+  ].filter(Boolean) as { icon: typeof Bed; label: string; value: string | number }[];
 
   return (
-    <div className="min-h-screen bg-background pb-24 font-sans selection:bg-primary/20">
-      
-      {/* 1. Header Navigation */}
-      <div className="container mx-auto max-w-7xl px-4 py-6 md:py-8 flex justify-between items-center">
-        <Link
-          href="/properties"
-          className="group flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <div className="p-2 rounded-full border bg-background group-hover:bg-muted transition-colors">
-            <ChevronLeft className="h-4 w-4" />
-          </div>
-          <span className="hidden sm:inline">Back to listings</span>
-        </Link>
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader />
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hidden sm:flex rounded-full gap-2">
-            <Share className="h-4 w-4" /> Share
+      <main className="container-page grow pt-28 pb-24">
+        {/* Top bar */}
+        <div className="mb-6 flex items-center justify-between">
+          <Button asChild variant="ghost" className="-ml-3 text-muted-foreground">
+            <Link href={rental ? '/rent' : '/buy'}>
+              <ChevronLeft /> {rental ? 'All rentals' : 'All properties for sale'}
+            </Link>
           </Button>
-          <Button variant="outline" size="sm" className="rounded-full gap-2 hover:text-red-500 hover:border-red-500 transition-colors">
-            <Heart className="h-4 w-4" /> Save
-          </Button>
-        </div>
-      </div>
-
-      <main className="container mx-auto max-w-7xl px-4">
-        {/* Title Section */}
-        <div className="mb-6 space-y-2">
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <Badge className="bg-primary hover:bg-primary/90 rounded-sm uppercase tracking-widest text-[10px] px-3 py-1 font-bold">
-              {property.status?.replace('-', ' ')}
-            </Badge>
-            <Badge variant="secondary" className="rounded-sm uppercase tracking-widest text-[10px] px-3 py-1 font-bold">
-              {property.type}
-            </Badge>
-          </div>
-          <h1 className="text-3xl md:text-5xl lg:text-5xl font-extrabold tracking-tight text-foreground">
-            {property.title}
-          </h1>
-          <div className="flex items-center gap-2 text-muted-foreground font-medium text-lg mt-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            {property.address || property.location}, {property.province || 'Solomon Islands'}
-          </div>
+          <ShareButton title={property.title} />
         </div>
 
-        {/* Immersive Image Grid (Airbnb Style) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-2 md:gap-3 rounded-[2rem] overflow-hidden md:h-[60vh] mb-12 shadow-sm border border-border/40">
-          {/* Main Hero Image */}
-          <div className="col-span-1 md:col-span-2 row-span-2 relative group cursor-pointer overflow-hidden">
-            <img 
-              src={getImageUrl(displayImages[0])} 
-              alt={property.title} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300" />
+        {/* Title */}
+        <div className="mb-8">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <StatusBadge status={property.status} />
+            <Badge variant="muted" className="capitalize">{property.type}</Badge>
+            {property.featured && <Badge variant="soft">Featured</Badge>}
+          </div>
+          <h1 className="max-w-4xl text-4xl font-extrabold md:text-6xl">{property.title}</h1>
+          <p className="mt-3 flex items-center gap-1.5 text-lg text-muted-foreground">
+            <MapPin className="size-5 text-primary" />
+            {place}
+          </p>
+        </div>
+
+        {/* Gallery */}
+        <div className="mb-12 grid grid-cols-1 gap-2 overflow-hidden rounded-3xl md:h-[62vh] md:grid-cols-4 md:grid-rows-2">
+          <div className="relative aspect-4/3 overflow-hidden bg-muted md:col-span-2 md:row-span-2 md:aspect-auto">
+            <img src={getImageUrl(displayImages[0])} alt={property.title} className="size-full object-cover" />
           </div>
 
-          {/* Grid of 4 Smaller Images */}
           {displayImages.slice(1, 5).map((img, index) => (
-            <div key={index} className="hidden md:block relative group cursor-pointer overflow-hidden relative">
-              <img 
-                src={getImageUrl(img)} 
-                alt={`${property.title} - View ${index + 2}`} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            <div key={index} className="relative hidden overflow-hidden bg-muted md:block">
+              <img
+                src={getImageUrl(img)}
+                alt={`${property.title} - View ${index + 2}`}
+                className="size-full object-cover transition-transform duration-700 ease-out hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300" />
               {index === 3 && remainingImagesCount > 0 && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
-                  <span className="text-white font-bold text-xl tracking-wider">+{remainingImagesCount}</span>
+                <div className="absolute inset-0 grid place-items-center bg-black/50">
+                  <span className="font-display text-3xl font-bold text-white">+{remainingImagesCount}</span>
                 </div>
               )}
             </div>
           ))}
 
-          {/* Fallback for Mobile if fewer images */}
           {displayImages.length < 2 && (
-             <div className="hidden md:block md:col-span-2 row-span-2 bg-muted flex items-center justify-center border-l">
-               <span className="text-muted-foreground">More photos coming soon</span>
-             </div>
+            <div className="hidden place-items-center bg-muted text-muted-foreground md:col-span-2 md:row-span-2 md:grid">
+              More photos coming soon
+            </div>
           )}
         </div>
 
-        {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
-          
-          {/* Main Info Column */}
-          <div className="lg:col-span-8 space-y-12">
-            
-            {/* Quick Summary Row */}
-            <div className="flex flex-wrap items-center justify-between border-y py-6 gap-6 md:gap-12">
-              <div className="flex flex-col gap-1">
-                <span className="text-3xl font-bold text-slate-800">
-                  SBD {property.price.toLocaleString()}
-                </span>
-                <span className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">Asking Price</span>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-6 md:gap-10">
-                {!isLand && property.bedrooms !== undefined && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-slate-100 rounded-full text-slate-700"><Bed className="h-6 w-6" /></div>
-                    <div>
-                      <p className="font-bold text-xl leading-none">{property.bedrooms}</p>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">Beds</p>
-                    </div>
-                  </div>
-                )}
-                {!isLand && property.bathrooms !== undefined && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-slate-100 rounded-full text-slate-700"><Bath className="h-6 w-6" /></div>
-                    <div>
-                      <p className="font-bold text-xl leading-none">{property.bathrooms}</p>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">Baths</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-slate-100 rounded-full text-slate-700"><Ruler className="h-6 w-6" /></div>
-                  <div>
-                    <p className="font-bold text-xl leading-none">{property.landArea || '--'}</p>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Sq M</p>
-                  </div>
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
+          {/* Main column */}
+          <div className="space-y-14 lg:col-span-8">
+            {/* Key facts */}
+            <div className="grid auto-cols-fr grid-flow-col divide-x rounded-2xl border bg-card">
+              {keyFacts.map(({ icon: Icon, value, label }) => (
+                <div key={label} className="p-5 md:p-6">
+                  <Icon className="mb-3 size-5 text-primary" />
+                  <p className="font-display text-2xl font-bold md:text-3xl">{value}</p>
+                  <p className="text-sm text-muted-foreground">{label}</p>
                 </div>
-              </div>
+              ))}
             </div>
 
-            {/* Description */}
-            <section className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">About this space</h2>
-              <div className="prose prose-slate prose-lg max-w-none text-slate-600 font-light leading-relaxed">
+            <section>
+              <h2 className="mb-4 text-3xl font-bold">About this property</h2>
+              <div className="space-y-4 text-lg leading-relaxed text-foreground/75">
                 {property.description?.split('\\n').map((paragraph, i) => (
                   <p key={i}>{paragraph}</p>
                 ))}
               </div>
             </section>
 
-            <Separator />
-
-            {/* In-depth Details Grid */}
-            <section className="space-y-6">
-               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Property Details</h2>
-               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-12">
-                  {property.buildingArea !== undefined && property.buildingArea > 0 && (
-                    <div className="flex items-start gap-4">
-                      <Layers className="h-6 w-6 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Building Area</p>
-                        <p className="font-medium text-slate-900">{property.buildingArea} sqm</p>
-                      </div>
+            <section>
+              <h2 className="mb-6 text-3xl font-bold">Details</h2>
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {details.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex items-center gap-4 rounded-2xl bg-muted p-4">
+                    <Icon className="size-5 text-muted-foreground" />
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{label}</dt>
+                      <dd className="font-semibold capitalize">{value}</dd>
                     </div>
-                  )}
-                  {property.yearBuilt !== undefined && property.yearBuilt > 0 && (
-                    <div className="flex items-start gap-4">
-                      <Calendar className="h-6 w-6 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Year Built</p>
-                        <p className="font-medium text-slate-900">{property.yearBuilt}</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-start gap-4">
-                      <Building className="h-6 w-6 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Property Type</p>
-                        <p className="font-medium text-slate-900 capitalize">{property.type}</p>
-                      </div>
                   </div>
-               </div>
+                ))}
+              </dl>
             </section>
 
             {property.features && property.features.length > 0 && (
-              <>
-                <Separator />
-                <section className="space-y-6">
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">What this place offers</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {property.features.map((feature, i) => (
-                      <div key={i} className="flex items-center gap-4 text-slate-700 font-medium">
-                        <CheckCircle2 className="h-6 w-6 text-slate-300" />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </>
+              <section>
+                <h2 className="mb-6 text-3xl font-bold">What&apos;s included</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {property.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 font-medium">
+                      <Check className="size-4 text-primary" strokeWidth={3} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
 
             {property.coordinates && (
-              <>
-                <Separator />
-                <section className="space-y-6">
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Where you'll be</h2>
-                  <p className="text-slate-500 font-medium">{property.address || property.location}, {property.province}</p>
-                  <div className="rounded-3xl overflow-hidden shadow-sm border border-slate-200 h-[400px]">
-                    <MapWrapper coordinates={property.coordinates} title={property.title} />
-                  </div>
-                </section>
-              </>
+              <section>
+                <h2 className="mb-2 text-3xl font-bold">Location</h2>
+                <p className="mb-6 text-muted-foreground">{place}</p>
+                <div className="h-[420px] overflow-hidden rounded-2xl border">
+                  <MapWrapper coordinates={property.coordinates} title={property.title} />
+                </div>
+              </section>
             )}
-
           </div>
 
-          {/* Sticky Sidebar */}
+          {/* Sticky contact card */}
           <aside className="lg:col-span-4">
-            <div className="sticky top-8 w-full">
-              <Card className="border shadow-xl shadow-slate-200/50 rounded-[2rem] bg-white">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-3xl font-extrabold text-slate-900">
-                    SBD {property.price.toLocaleString()}
-                  </CardTitle>
-                  <CardDescription className="text-base font-medium">
-                    Listed {property.status.replace('-', ' ')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  
-                  {/* Agent Card Inline */}
-                  <div className="flex items-center gap-4 py-4 border-y">
-                    <Avatar className="h-16 w-16 border-2 border-slate-100">
-                      <AvatarImage src="" alt={property.agent?.name || 'Agent'} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
-                        {property.agent?.name?.charAt(0) || 'G'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Listed by</p>
-                      <p className="font-bold text-slate-900 text-lg">{property.agent?.name || 'Ground Link Agent'}</p>
-                    </div>
-                  </div>
+            <div className="sticky top-24 overflow-hidden rounded-3xl border bg-card">
+              <div className="on-dark bg-ink-glow p-6 text-ink-foreground">
+                <p className="text-sm text-ink-foreground/60">{rental ? 'Rent' : 'Asking price'}</p>
+                <p className="font-display text-4xl font-extrabold">
+                  {formatPrice(property.price)}
+                  {rental && <span className="ml-1 text-lg font-semibold text-ink-foreground/60">/ month</span>}
+                </p>
+              </div>
 
-                  <div className="space-y-3">
-                    {/* Primary Call to Action */}
-                    <WhatsAppButton
-                      phone="6777809508"
-                      title={property.title}
-                      id={property._id}
-                    />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="h-14 rounded-xl font-bold gap-2 text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50 shadow-xs">
-                        <Phone className="h-5 w-5" /> Call Agent
-                      </Button>
-                      <Button variant="outline" className="h-14 rounded-xl font-bold gap-2 text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50 shadow-xs">
-                        <Mail className="h-5 w-5" /> Message
-                      </Button>
-                    </div>
+              <div className="space-y-5 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="grid size-12 place-items-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary">
+                    {property.agent?.name?.charAt(0) || 'G'}
                   </div>
-
-                  {/* Share Component */}
-                  <div className="pt-4 flex flex-col items-center justify-center border-t border-slate-100 gap-3">
-                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Share this listing</p>
-                     <ShareButton title={property.title} />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Listed by</p>
+                    <p className="font-semibold">{property.agent?.name || 'Ground Link Agent'}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <WhatsAppButton
+                  phone={OFFICE_PHONE}
+                  title={property.title}
+                  id={property._id}
+                  rental={rental}
+                  label={rental ? 'Book a viewing on WhatsApp' : 'Enquire on WhatsApp'}
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button asChild variant="outline" size="lg">
+                    <a href={`tel:${property.agent?.phone || `+${OFFICE_PHONE}`}`}>
+                      <Phone /> Call
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <a href={`mailto:${property.agent?.email || OFFICE_EMAIL}?subject=${encodeURIComponent(property.title)}`}>
+                      <Mail /> Email
+                    </a>
+                  </Button>
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground">Ref: {property._id}</p>
+              </div>
             </div>
           </aside>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

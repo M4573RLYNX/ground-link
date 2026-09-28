@@ -1,202 +1,149 @@
-import Header from '@/components/Header';
+import type { Metadata } from 'next';
+import { CheckCircle2, Clock, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Mail,
-    Phone,
-    MapPin,
-    Clock,
-    MessageSquare,
-    Send,
-    Facebook,
-    Instagram,
-    Badge
-} from 'lucide-react';
+import SiteHeader from '@/components/site/SiteHeader';
+import SiteFooter from '@/components/site/SiteFooter';
+import MapWrapper from '@/components/MapWrapper';
+import ContactForm from '@/components/site/ContactForm';
+import { SITE_CONTACT, TOPICS, Topic, whatsappLink } from '@/lib/site';
 
-export default function ContactPage() {
-    return (
-        <div className="flex flex-col min-h-screen bg-background">
-            <Header />
+export const metadata: Metadata = { title: 'About & Contact | Ground Link' };
 
-            {/* 1. Header Section */}
-            <section className="relative pt-40 pb-24 overflow-hidden">
-                {/* The Gradient Overlay: Black to Transparent to White */}
-                <div className="absolute inset-0 z-0 bg-linear-to-b from-black via-black/80 to-background opacity-50" />
+const HONIARA = { lat: -9.4295, lng: 159.9556 };
 
-                {/* Optional: Subtle background texture or image */}
-                <div className="absolute inset-0 z-[-1] opacity-30">
-                    <img
-                        src="https://images.unsplash.com/photo-1577415124269-b911f99c1d68?q=80&w=2070&auto=format&fit=crop"
-                        className="w-full h-full object-cover grayscale"
-                        alt="Contact background"
-                    />
-                </div>
+const channels = [
+  { icon: Phone, title: 'Call or WhatsApp', detail: SITE_CONTACT.phoneDisplay, href: `tel:+${SITE_CONTACT.whatsapp}` },
+  { icon: Mail, title: 'Email', detail: SITE_CONTACT.email, href: `mailto:${SITE_CONTACT.email}` },
+  { icon: MapPin, title: 'Office', detail: SITE_CONTACT.office, href: '#map' },
+  { icon: Clock, title: 'Hours', detail: SITE_CONTACT.hours },
+];
 
-                <div className="container mx-auto px-6 relative z-10 text-center">
-                    <Badge className="bg-primary text-white mb-6 rounded-none px-4 py-1 uppercase tracking-[0.2em] animate-in fade-in slide-in-from-top-4 duration-1000">
-                        Contact Us
-                    </Badge>
-                    <h1 className="text-4xl md:text-7xl font-black mb-6 text-white ">
-                        Let's <span className="text-primary">Connect.</span>
-                    </h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
-                        Inquire about premier listings or schedule a consultation with our Honiara-based team.
-                    </p>
-                </div>
-            </section>
+const pillars = [
+  { icon: MapPin, title: 'Local team', desc: 'Based in Honiara, with contacts across the provinces.' },
+  { icon: ShieldCheck, title: 'Safe deals', desc: 'We know customary and registered land, so your purchase is protected.' },
+  { icon: CheckCircle2, title: 'Checked listings', desc: 'Our team checks every property before it goes on the site.' },
+];
 
-            {/* 2. Main Contact Grid */}
-            <section className="py-24 container mx-auto px-6 max-w-7xl">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { topic } = await searchParams;
+  const initialTopic = typeof topic === 'string' && topic in TOPICS ? (topic as Topic) : undefined;
 
-                    {/* Left Side: Contact Info */}
-                    <div className="lg:col-span-5 space-y-8">
-                        <div className="space-y-4">
-                            <h2 className="text-3xl font-bold">Get in Touch</h2>
-                            <p className="text-lg text-muted-foreground">
-                                Visit our office or reach out via our direct channels. We typically respond within 2 hours.
-                            </p>
-                        </div>
+  return (
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader />
 
-                        <div className="grid grid-cols-1 gap-6">
-                            {[
-                                {
-                                    icon: Phone,
-                                    title: 'Call or WhatsApp',
-                                    detail: '+677 7123456',
-                                    sub: 'Mon - Fri, 8am - 5pm'
-                                },
-                                {
-                                    icon: Mail,
-                                    title: 'Email Us',
-                                    detail: 'hello@groundlink.com.sb',
-                                    sub: 'General inquiries'
-                                },
-                                {
-                                    icon: MapPin,
-                                    title: 'Visit Honiara Office',
-                                    detail: 'Hibiscus Avenue, Central Honiara',
-                                    sub: 'Solomon Islands'
-                                },
-                                {
-                                    icon: Clock,
-                                    title: 'Working Hours',
-                                    detail: '8:00 AM - 5:00 PM',
-                                    sub: 'Saturday by appointment'
-                                },
-                            ].map((item, i) => (
-                                <Card key={i} className="border-none bg-muted/30 rounded-3xl group hover:bg-primary transition-colors duration-300">
-                                    <CardContent className="p-6 flex items-center gap-6">
-                                        <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                                            <item.icon className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-lg group-hover:text-white transition-colors">{item.title}</h4>
-                                            <p className="text-primary font-medium group-hover:text-white/90">{item.detail}</p>
-                                            <p className="text-xs text-muted-foreground group-hover:text-white/70">{item.sub}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-
-                        {/* Social Links */}
-                        <div className="pt-6 space-y-4">
-                            <p className="font-bold uppercase tracking-widest text-sm text-muted-foreground">Follow Our Listings</p>
-                            <div className="flex gap-4">
-                                <Button variant="outline" size="icon" className="rounded-2xl h-12 w-12 hover:bg-primary hover:text-white transition-all">
-                                    <Facebook className="h-5 w-5" />
-                                </Button>
-                                <Button variant="outline" size="icon" className="rounded-2xl h-12 w-12 hover:bg-primary hover:text-white transition-all">
-                                    <Instagram className="h-5 w-5" />
-                                </Button>
-                                <Button variant="outline" size="icon" className="rounded-2xl h-12 w-12 hover:bg-primary hover:text-white transition-all">
-                                    <MessageSquare className="h-5 w-5" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Side: Contact Form */}
-                    <div className="lg:col-span-7">
-                        <Card className="shadow-2xl border-none rounded-[3rem] p-8 md:p-12 overflow-hidden relative">
-                            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-
-                            <form className="space-y-8 relative z-10">
-                                <div className="space-y-2">
-                                    <h3 className="text-3xl font-bold">Send a Message</h3>
-                                    <p className="text-muted-foreground">Required fields are marked with an asterisk (*)</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold uppercase tracking-wider">Full Name *</label>
-                                        <Input placeholder="John Doe" className="h-14 rounded-2xl bg-slate-50 border-none focus-visible:ring-primary" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold uppercase tracking-wider">Email Address *</label>
-                                        <Input type="email" placeholder="john@example.com" className="h-14 rounded-2xl bg-slate-50 border-none focus-visible:ring-primary" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold uppercase tracking-wider">Phone Number</label>
-                                        <Input placeholder="+677 7xxxxxx" className="h-14 rounded-2xl bg-slate-50 border-none focus-visible:ring-primary" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold uppercase tracking-wider">Inquiry Type</label>
-                                        <select className="flex h-14 w-full rounded-2xl bg-slate-50 border-none px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                                            <option>Buying a Property</option>
-                                            <option>Selling a Property</option>
-                                            <option>Land Consultation</option>
-                                            <option>Investment Advice</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold uppercase tracking-wider">Message *</label>
-                                    <Textarea
-                                        placeholder="Tell us about the property or location you are interested in..."
-                                        className="min-h-[160px] rounded-3xl bg-slate-50 border-none focus-visible:ring-primary p-6"
-                                    />
-                                </div>
-
-                                <Button className="w-full h-16 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 gap-2 hover:scale-[1.01] transition-transform">
-                                    <Send className="h-5 w-5" /> Send Message
-                                </Button>
-                            </form>
-                        </Card>
-                    </div>
-                </div>
-            </section>
-
-            {/* 3. Map / Location Image */}
-            <section className="h-[400px] w-full bg-slate-200 mt-12 overflow-hidden relative grayscale hover:grayscale-0 transition-all duration-700">
-                <img
-                    src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1974&auto=format&fit=crop"
-                    alt="Map Placeholder"
-                    className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-primary/10 pointer-events-none" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3">
-                    <MapPin className="text-primary h-5 w-5" />
-                    <span className="font-bold">Ground Link Honiara</span>
-                </div>
-            </section>
-
-            {/* Minimal Footer */}
-            <footer className="bg-white py-12 px-6 border-t border-slate-100 mt-auto">
-                <div className="container mx-auto max-w-5xl text-center">
-                    <p className="text-lg font-bold text-slate-900 tracking-tight mb-2">Ground Link</p>
-                    <p className="text-sm font-medium text-slate-500">
-                      © {new Date().getFullYear()} Ground Link. All rights reserved. • Honiara, Solomon Islands
-                    </p>
-                </div>
-            </footer>
+      {/* Intro */}
+      <section className="bg-page-glow pt-36 pb-12 md:pt-44">
+        <div className="container-page grid gap-8 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <p className="eyebrow mb-4">About &amp; contact</p>
+            <h1 className="text-5xl leading-[0.95] font-extrabold md:text-7xl">
+              Local people. <span className="text-gradient">Straight answers.</span>
+            </h1>
+          </div>
+          <div className="lg:col-span-5">
+            <p className="text-lg text-muted-foreground">
+              Ground Link is a Honiara team helping families and investors rent, buy, sell and survey property in the
+              Solomon Islands.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button asChild size="lg" className="bg-[#25D366] text-white hover:bg-[#20ba5a]">
+                <a href={whatsappLink('Hi Ground Link, ')} target="_blank" rel="noopener noreferrer">
+                  WhatsApp us
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <a href={`tel:+${SITE_CONTACT.whatsapp}`}>
+                  <Phone /> Call
+                </a>
+              </Button>
+            </div>
+          </div>
         </div>
-    );
+      </section>
+
+      {/* Contact */}
+      <section id="message" className="scroll-mt-24 pb-20">
+        <div className="container-page grid items-start gap-10 lg:grid-cols-12">
+          <div className="rounded-3xl border bg-card p-6 md:p-10 lg:col-span-7">
+            <ContactForm key={initialTopic} initialTopic={initialTopic} />
+          </div>
+
+          <div className="space-y-3 lg:col-span-5">
+            {channels.map((item) => {
+              const body = (
+                <>
+                  <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <item.icon className="size-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground">{item.title}</p>
+                    <p className="truncate font-semibold">{item.detail}</p>
+                  </div>
+                </>
+              );
+              const cls = 'flex items-center gap-5 rounded-2xl border bg-card p-5';
+              return item.href ? (
+                <a key={item.title} href={item.href} className={`${cls} transition-colors hover:border-primary`}>
+                  {body}
+                </a>
+              ) : (
+                <div key={item.title} className={cls}>
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="about" className="scroll-mt-24 pb-20">
+        <div className="container-page">
+          <div className="grid gap-12 overflow-hidden on-dark rounded-3xl bg-ink-glow p-8 text-ink-foreground md:p-14 lg:grid-cols-2 lg:gap-20">
+            <div className="space-y-6">
+              <p className="eyebrow">About us</p>
+              <h2 className="text-4xl font-extrabold md:text-5xl">
+                Built for the <span className="text-gradient">Hapi Isles.</span>
+              </h2>
+              <p className="text-lg text-ink-foreground/70">
+                Ground Link started with a simple observation: finding verified land and good homes in our own country
+                shouldn&apos;t be this hard. We&apos;re not a remote corporation. We&apos;re a local team fixing the
+                market from the ground up, with a modern service that respects customary tradition.
+              </p>
+              <blockquote className="border-l-2 border-primary pl-5 text-ink-foreground/85 italic">
+                &ldquo;In the Solomon Islands, property is more than an asset. It&apos;s our legacy.&rdquo;
+                <footer className="mt-2 text-sm text-ink-foreground/50 not-italic">The Founder, Ground Link</footer>
+              </blockquote>
+            </div>
+            <div className="grid content-start gap-3">
+              {pillars.map((p) => (
+                <div key={p.title} className="flex gap-4 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
+                  <p.icon className="size-7 shrink-0 text-primary" strokeWidth={1.75} />
+                  <div>
+                    <h3 className="text-xl font-bold">{p.title}</h3>
+                    <p className="mt-1 text-ink-foreground/65">{p.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="map" className="scroll-mt-24 pb-20">
+        <div className="container-page">
+          <div className="h-[380px] overflow-hidden rounded-3xl border">
+            <MapWrapper coordinates={HONIARA} title="Ground Link, Honiara" />
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter />
+    </div>
+  );
 }
